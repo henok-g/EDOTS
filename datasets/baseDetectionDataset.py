@@ -7,7 +7,7 @@ class baseTrafficSignDataset(Dataset, ABC):
     
     Detection dataset contract:
 
-    - load_image: Method to load images from the dataset
+    - load_images: Method to load images from the dataset
         returns:
             list of tuples: Each tuple contains (image_id, image_data)
 
@@ -29,18 +29,21 @@ class baseTrafficSignDataset(Dataset, ABC):
 
     '''
 
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, images_subdir="JPEGImages", annotations_subdir="Annotations"):
         self.root_dir       = root_dir
-        self.annotations    = self.load_annotations(root_dir)
-        self.images         = self.load_image(root_dir)
+        self.images_subdir = images_subdir
+        self.annotations_subdir = annotations_subdir
+        self.annotations    = self.load_annotations(root_dir,annotations_subdir)
+        self.images         = self.load_images(root_dir,images_subdir)
+        self.num_samples    = self.__len__()
         
 
     @abstractmethod
-    def load_image(self, root_dir):
+    def load_images(self):
         pass
 
     @abstractmethod
-    def load_annotations(self, root_dir):
+    def load_annotations(self):
         pass
 
     @abstractmethod
@@ -51,7 +54,4 @@ class baseTrafficSignDataset(Dataset, ABC):
     def __len__(self):
         pass
 
-    @abstractmethod
-    def preprocess(self, data):
-        pass
 
