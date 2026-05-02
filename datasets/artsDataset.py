@@ -6,6 +6,12 @@ from xml.etree import ElementTree as ET
 from PIL import Image
 import numpy as np
 from tqdm import tqdm
+import sys
+import warning
+
+sys.path.append('EDOTS')
+from utils.dataVisUtil import dataVis
+
 
 
 class artsDataset(baseTrafficSignDataset):
@@ -21,7 +27,11 @@ class artsDataset(baseTrafficSignDataset):
         
         annotations_subdir (str) - TODO: Fill this in
         
-    load_images(self): Method to load images from the dataset
+    load_images_as_numpy: Method to load images from the dataset
+    
+    parse_annotation
+    
+    
     
     '''
     
@@ -32,16 +42,18 @@ class artsDataset(baseTrafficSignDataset):
         self.difficulty = difficulty
         super().__init__(root)
         
+        
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% load_images_as_numpy
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     def load_images_as_numpy(self, image_files):
-        images = {}
+        images = []
         for img_file in tqdm(image_files,desc="Loading Images"):
             img = Image.open(img_file)
             img_array = np.array(img)
-            images[os.path.basename(img_file[:-4])] = img_array
+            images.append({os.path.basename(img_file[:-4]): img_array})
         return images
+    
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% parse_annotation
@@ -51,6 +63,7 @@ class artsDataset(baseTrafficSignDataset):
         root = tree.getroot()
 
         filename = root.find("filename").text
+        id = filename[:-4]
 
         size = root.find("size")
         width = int(size.find("width").text)
@@ -73,57 +86,72 @@ class artsDataset(baseTrafficSignDataset):
             })
 
         return {
-            "filename": filename,
+            "id": id,
             "width": width,
             "height": height,
             "objects": objects
         }
         
+        
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% load_images
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     def load_images(self, root_dir, images_subdir):
-        image_files = glob.glob(os.path.join(root_dir, self.difficulty, images_subdir,"*.jpg"))
-        return self.load_images_as_numpy(image_files[:3000]) # TODO: request more memory from aws, g4dn.2xlarge not enough
+        image_files = sorted(glob.glob(os.path.join(root_dir, self.difficulty, images_subdir,"*.jpg")))
+        return self.load_images_as_numpy(image_files[:5]) # TODO: request more memory from aws, g4dn.2xlarge not enough
 
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% load_annotations
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     def load_annotations(self, root_dir, annotations_subdir):
-        annotation_files = glob.glob(os.path.join(root_dir, self.difficulty, annotations_subdir,"*.xml"))
+        annotation_files = sorted(glob.glob(os.path.join(root_dir, self.difficulty, annotations_subdir,"*.xml")))
         return [self.parse_annotation(ann_file) for ann_file in tqdm(annotation_files,desc="Loading Annotations")]
+    
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% __getitem__
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     def __getitem__(self, index):
         # Implementation for getting an item by index specific to artsDataset
-        pass    
+        
+        # check if the id of the image and annotation matches before returning data/label pair
+        img_id = list(self.images[index].keys())[0]
+        ann_id = self.annotations[index]['id']
+ 
+        if img_id == ann_id:    
+            return self.images[index][img_id],self.annotations[index]
+        else:
+            warning.warn("The id of the image and annotation does not match")
+
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% __len__
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     def __len__(self):
         # Implementation for getting the length of the dataset specific to artsDataset
-        pass
+        return len(self.images)
     
 
 if __name__ == "__main__":
     dataset = artsDataset("/mnt/data/arts", difficulty="easy", images_subdir="JPEGImages", annotations_subdir="Annotations")
-    
-    # validate that annotations are sequential with images, currently can only load 3000 images from arts dataset
-    
+        
+        
     # Generate visualizations
+    for idx,data in enumerate(dataset):
+        img,annotation = data
+        dataVis(img, annotation)
 
+    # add more memory so we can load more data
     
-    # come up with models
+    # determine metrics + loss functions + figure out how to use annotations
     
-    # determine metrics
+    # select model
     
-    # perform classification
+    # perform classification + analyze
     
     # scale up
     
-    # augmentation
+    # data augmentation
+    
     print(f"Dataset length: {len(dataset)}")
