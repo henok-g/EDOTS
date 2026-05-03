@@ -1,0 +1,5 @@
+# figures directory
+figures/
+
+# pycache
+*/__pycache__/
