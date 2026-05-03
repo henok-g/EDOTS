@@ -141,18 +141,6 @@ if __name__ == "__main__":
     for idx,data in enumerate(dataset):
         img,annotation = data
         dataVis(img, annotation)
-
-    # add more memory so we can load more data
-        #  also ebs volume with only ARTS dataset is costing me $30 a month, this has easy and challenging dataset (12GB) might have to be more clever with how we scale
-        
-    # determine metrics + loss functions + figure out how to use annotations
     
-    # select model
-    
-    # perform classification + analyze
-    
-    # scale up
-    
-    # data augmentation
-    
+    # print the length of the dataset
     print(f"Dataset length: {len(dataset)}")
