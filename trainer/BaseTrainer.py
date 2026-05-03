@@ -9,13 +9,14 @@ class BaseTrainer:
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% __init__
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    def __init__(self, model, optimizer,criterion,device,train_data,test_data):
-        self.model = model.to(device)
-        self.optimizer = optimizer
-        self.criterion = criterion
-        self.device = device
+    def __init__(self, model, optimizer,criterion,device,train_data,test_data,epochs):
+        self.model      = model.to(device)
+        self.optimizer  = optimizer
+        self.criterion  = criterion
+        self.device     = device
         self.train_data = train_data
-        self.test_data = test_data
+        self.test_data  = test_data
+        self.epochs     = epochs
         
         
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,17 +74,48 @@ class BaseTrainer:
             
             self.evaluate(self.test_data)
             
+            
+            
 if __name__ == '__main__':
     import torch
     import torchvision
     from torchvision.models.detection import FasterRCNN
     from torchvision.models.detection.rpn import AnchorGenerator
     
+    
+    # initialize the arguments for the FasterRCNN model
+    # TODO Verify that this works, this follows the example on FasterRCNN docs but they use pretrained weights
+    # I removed the pretrained weights so that I can test with my own dataset
+    
     backbone = torchvision.models.mobilenet_v2().features
     backbone.out_channels = 1280
     anchor_generator = AnchorGenerator(sizes=((32,64,128,256,512),),aspect_ratios=((0.5,1.0,2.0),))
     roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'],output_size=7,sampling_ratio=2)
     
+    # define the model
     model = FasterRCNN(num_classes=2,rpn_anchor_generator=anchor_generator,
                   box_roi_pool=roi_pooler)
-    trainer = BaseTrainer(model,)
+    
+    # define the optimizer
+    opt = torch.optim.SGD(model.parameters(), lr = 0.001, momentum=0.9)
+    
+    # define the loss function
+    criterion = torch.nn.modules.loss.CrossEntropyLoss()
+    
+    # define the train and test data
+    # TODO pass this through a dataloader
+    train_data = None
+    test_data = None
+    
+    epochs = 10
+    
+    trainer_params = {
+        'model'     : model,
+        'opt'       : opt,
+        'criterion' : criterion,
+        'train_data': train_data,
+        'test_data' : test_data,
+        'epochs'    : epochs
+    }
+    
+    trainer = BaseTrainer(**trainer_params)
