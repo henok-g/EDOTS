@@ -1,6 +1,6 @@
 import torch
 
-class trainer:
+class BaseTrainer:
     '''
     This is just the skeleton code for the trainer function. Will implement functions once model, optimizer, 
     loss function have been determined,
@@ -72,3 +72,18 @@ class trainer:
             self.train_epoch(self.train_data)
             
             self.evaluate(self.test_data)
+            
+if __name__ == '__main__':
+    import torch
+    import torchvision
+    from torchvision.models.detection import FasterRCNN
+    from torchvision.models.detection.rpn import AnchorGenerator
+    
+    backbone = torchvision.models.mobilenet_v2().features
+    backbone.out_channels = 1280
+    anchor_generator = AnchorGenerator(sizes=((32,64,128,256,512),),aspect_ratios=((0.5,1.0,2.0),))
+    roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'],output_size=7,sampling_ratio=2)
+    
+    model = FasterRCNN(num_classes=2,rpn_anchor_generator=anchor_generator,
+                  box_roi_pool=roi_pooler)
+    trainer = BaseTrainer(model,)
