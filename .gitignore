@@ -1,5 +1,9 @@
-# figures directory
+# directories to ignore
 figures/
+augmentations/
+checkpoints/
+logs/
+
 
 # pycache
 */__pycache__/

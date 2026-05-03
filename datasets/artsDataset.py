@@ -18,18 +18,18 @@ class artsDataset(baseTrafficSignDataset):
     '''
     Docstring for artsDataset
     
-    __init__(self, root, difficulty="easy"): Initializes the dataset with the root directory and difficulty level.
-        root (str) - The root directory of the dataset.
+        __init__(self, root, difficulty="easy"): Initializes the dataset with the root directory and difficulty level.
+            root (str) - The root directory of the dataset.
+            
+            difficulty (str) - The difficulty level of the dataset options are: "easy","challenging"
         
-        difficulty (str) - The difficulty level of the dataset options are: "easy","challenging"
-    
-        images_sub_dir (str) - TODO: Fill this in 
+            images_sub_dir (str) - TODO: Fill this in 
+            
+            annotations_subdir (str) - TODO: Fill this in
+            
+        load_images_as_numpy: Method to load images from the dataset
         
-        annotations_subdir (str) - TODO: Fill this in
-        
-    load_images_as_numpy: Method to load images from the dataset
-    
-    parse_annotation
+        parse_annotation
     
     
     
@@ -143,7 +143,8 @@ if __name__ == "__main__":
         dataVis(img, annotation)
 
     # add more memory so we can load more data
-    
+        #  also ebs volume with only ARTS dataset is costing me $30 a month, this has easy and challenging dataset (12GB) might have to be more clever with how we scale
+        
     # determine metrics + loss functions + figure out how to use annotations
     
     # select model
