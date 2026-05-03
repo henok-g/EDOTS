@@ -7,7 +7,7 @@ from PIL import Image
 import numpy as np
 from tqdm import tqdm
 import sys
-import warning
+import warnings
 
 sys.path.append('EDOTS')
 from utils.dataVisUtil import dataVis
@@ -98,7 +98,7 @@ class artsDataset(baseTrafficSignDataset):
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     def load_images(self, root_dir, images_subdir):
         image_files = sorted(glob.glob(os.path.join(root_dir, self.difficulty, images_subdir,"*.jpg")))
-        return self.load_images_as_numpy(image_files[:5]) # TODO: request more memory from aws, g4dn.2xlarge not enough
+        return self.load_images_as_numpy(image_files[:10]) # TODO: request more memory from aws, g4dn.2xlarge not enough
 
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,7 +122,7 @@ class artsDataset(baseTrafficSignDataset):
         if img_id == ann_id:    
             return self.images[index][img_id],self.annotations[index]
         else:
-            warning.warn("The id of the image and annotation does not match")
+            warnings.warn("The id of the image and annotation does not match")
 
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
