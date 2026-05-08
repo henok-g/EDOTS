@@ -14,9 +14,10 @@ if __name__ == '__main__':
     train_split,test_split,val_split = getTrainTestValSplit()
         
     # load in the easy arts dataset
-    train_dataset = artsDataset("/mnt/data/arts", difficulty="easy", images_subdir="JPEGImages", annotations_subdir="Annotations",ids=train_split)
-    test_dataset = artsDataset("/mnt/data/arts", difficulty="easy", images_subdir="JPEGImages", annotations_subdir="Annotations",ids=test_split)
-    val_dataset = artsDataset("/mnt/data/arts", difficulty="easy", images_subdir="JPEGImages", annotations_subdir="Annotations",ids=val_split)
+    rootDir = "/mnt/data/arts"
+    train_dataset = artsDataset(rootDir,ids=train_split)
+    test_dataset = artsDataset(rootDir,ids=test_split)
+    val_dataset = artsDataset(rootDir,ids=val_split)
     
     # MuSGD is the default optimizer for YOLOV8
     optimizer = "MuSGD"
