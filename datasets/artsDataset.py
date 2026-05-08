@@ -1,5 +1,5 @@
 import os
-from baseDetectionDataset import baseTrafficSignDataset
+from datasets.baseDetectionDataset import baseTrafficSignDataset
 import glob
 import pandas as pd
 from xml.etree import ElementTree as ET
@@ -38,9 +38,10 @@ class artsDataset(baseTrafficSignDataset):
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% __init__
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    def __init__(self, root,difficulty="easy", images_subdir="JPEGImages", annotations_subdir="Annotations"):
+    def __init__(self, root,difficulty="easy", images_subdir="JPEGImages", annotations_subdir="Annotations",ids:list=None):
         self.difficulty = difficulty
-        super().__init__(root)
+        self.ids = ids
+        super().__init__(root,images_subdir,annotations_subdir)
         
         
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,7 +99,10 @@ class artsDataset(baseTrafficSignDataset):
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     def load_images(self, root_dir, images_subdir):
         image_files = sorted(glob.glob(os.path.join(root_dir, self.difficulty, images_subdir,"*.jpg")))
-        return self.load_images_as_numpy(image_files[:10]) # TODO: request more memory from aws, g4dn.2xlarge not enough
+        if self.ids:
+            # if ids are defined, only retain the images that are specified in ids
+            image_files = [img for img in image_files if os.path.basename(img).rsplit('.')[0]  in self.ids]
+        return self.load_images_as_numpy(image_files[:1000]) # TODO: request more memory from aws, g4dn.2xlarge not enough
 
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,6 +136,18 @@ class artsDataset(baseTrafficSignDataset):
         # Implementation for getting the length of the dataset specific to artsDataset
         return len(self.images)
     
+    
+def getTrainTestValSplit(rootDir="/mnt/data/arts", difficulty="easy"):
+    with open(os.path.join(rootDir,difficulty,r'ImageSets/Main/train.txt'),'r') as f:
+        train_split = f.read().splitlines()
+        
+    with open(os.path.join(rootDir,difficulty,r'ImageSets/Main/test.txt'),'r') as f:
+        test_split = f.read().splitlines()
+        
+    with open(os.path.join(rootDir,difficulty,r'ImageSets/Main/val.txt'),'r') as f:
+        val_split = f.read().splitlines()
+        
+    return train_split,test_split,val_split
 
 if __name__ == "__main__":
     dataset = artsDataset("/mnt/data/arts", difficulty="easy", images_subdir="JPEGImages", annotations_subdir="Annotations")

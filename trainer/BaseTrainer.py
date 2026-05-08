@@ -9,14 +9,15 @@ class BaseTrainer:
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% __init__
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    def __init__(self, model, optimizer,criterion,device,train_data,test_data,epochs):
-        self.model      = model.to(device)
-        self.optimizer  = optimizer
-        self.criterion  = criterion
-        self.device     = device
+    def __init__(self, model, optimizer,criterion=None,device=None,train_data=None,test_data=None,val_data=None,epochs=None):
+        self.model      = model.to(device) if device else model
+        self.optimizer  = optimizer if optimizer else torch.optim.SGD
+        self.criterion  = criterion if criterion else torch.nn.BCELoss
+        self.device     = device if device else 'cpu'
         self.train_data = train_data
         self.test_data  = test_data
-        self.epochs     = epochs
+        self.val        = val_data
+        self.epochs     = epochs if epochs else 10
         
         
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
