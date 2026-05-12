@@ -33,7 +33,7 @@ class baseTrafficSignDataset(Dataset, ABC):
         self.root_dir       = root_dir
         self.images_subdir = images_subdir
         self.annotations_subdir = annotations_subdir
-        self.annotations    = self.load_annotations(root_dir,annotations_subdir)
+        self.labels         = self.load_annotations(root_dir,annotations_subdir)
         self.images         = self.load_images(root_dir,images_subdir)
         self.num_samples    = self.__len__()
         

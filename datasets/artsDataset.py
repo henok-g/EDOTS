@@ -121,10 +121,10 @@ class artsDataset(baseTrafficSignDataset):
         
         # check if the id of the image and annotation matches before returning data/label pair
         img_id = list(self.images[index].keys())[0]
-        ann_id = self.annotations[index]['id']
+        ann_id = self.labels[index]['id']
  
         if img_id == ann_id:    
-            return self.images[index][img_id],self.annotations[index]
+            return self.images[index][img_id],self.labels[index]
         else:
             warnings.warn("The id of the image and annotation does not match")
 
