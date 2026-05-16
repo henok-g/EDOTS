@@ -78,3 +78,5 @@ label_mapping = {
         76: "W7-3",
         77: "WT-100",
     },
+
+inverted_dict = {v: k for k, v in label_mapping[0].items()}

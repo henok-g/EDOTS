@@ -8,9 +8,11 @@ import numpy as np
 from tqdm import tqdm
 import sys
 import warnings
+import torch
 
 sys.path.append('EDOTS')
 from utils.dataVisUtil import dataVis
+from trainer.label_map import inverted_dict
 
 
 
@@ -51,6 +53,7 @@ class artsDataset(baseTrafficSignDataset):
         images = []
         for img_file in tqdm(image_files,desc="Loading Images"):
             img = Image.open(img_file)
+            img = img.resize((640, 640), Image.BILINEAR)
             img_array = np.array(img)
             images.append({os.path.basename(img_file[:-4]): img_array})
         return images
@@ -70,27 +73,36 @@ class artsDataset(baseTrafficSignDataset):
         width = int(size.find("width").text)
         height = int(size.find("height").text)
 
-        objects = []
+        cls = []; bboxes = []
+
 
         for obj in root.findall("object"):
-            label = obj.find("name").text
+            className = obj.find("name").text
 
             bndbox = obj.find("bndbox")
             xmin = int(bndbox.find("xmin").text)
             ymin = int(bndbox.find("ymin").text)
             xmax = int(bndbox.find("xmax").text)
             ymax = int(bndbox.find("ymax").text)
+            
+            
+            cx = (xmin + xmax) / (2*width)
+            cy = (ymin + ymax) / (2*height)
+            
+            w = (xmax - xmin) / width
+            h = (ymax - ymin) / height
 
-            objects.append({
-                "label": label,
-                "bbox": [xmin, ymin, xmax, ymax]
-            })
+            cls.append([inverted_dict[className]])
+            bboxes.append([cx, cy, w, h])
 
         return {
-            "id": id,
-            "width": width,
-            "height": height,
-            "objects": objects
+            "id"            : id,
+            "im_file"       : filename,
+            "img_shape"     : (width,height),
+            "ori_shape"     : (1920, 1080),
+            "cls"           : np.array(cls),
+            "bboxes"        : np.array(bboxes),
+            "normalized"    : False
         }
         
         
@@ -102,7 +114,7 @@ class artsDataset(baseTrafficSignDataset):
         if self.ids:
             # if ids are defined, only retain the images that are specified in ids
             image_files = [img for img in image_files if os.path.basename(img).rsplit('.')[0]  in self.ids]
-        return self.load_images_as_numpy(image_files[:1000]) # TODO: request more memory from aws, g4dn.2xlarge not enough
+        return self.load_images_as_numpy(image_files) # TODO: request more memory from aws, g4dn.2xlarge not enough
 
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -110,6 +122,9 @@ class artsDataset(baseTrafficSignDataset):
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     def load_annotations(self, root_dir, annotations_subdir):
         annotation_files = sorted(glob.glob(os.path.join(root_dir, self.difficulty, annotations_subdir,"*.xml")))
+        if self.ids:
+            #if ids are defined, only retain the images that are specified in ids
+            annotation_files = [label for label in annotation_files if os.path.basename(label).rsplit('.')[0] in self.ids]
         return [self.parse_annotation(ann_file) for ann_file in tqdm(annotation_files,desc="Loading Annotations")]
     
     
@@ -136,6 +151,29 @@ class artsDataset(baseTrafficSignDataset):
         # Implementation for getting the length of the dataset specific to artsDataset
         return len(self.images)
     
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #% collate_fn
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    @staticmethod
+    def collate_fn(batch):
+        imgs, labels = zip(*batch)
+        
+        # (H,W,C) -> (B,C,H,W)
+        imgs        = torch.stack([torch.as_tensor(img,dtype=torch.float32).permute(2,0,1) / 255.0 for img in imgs])
+        batch_idx   = torch.cat([torch.full((len(l['cls']),),i,dtype=torch.long) for i,l in enumerate(labels)])
+        cls         = torch.cat([torch.as_tensor(l['cls'],dtype=torch.long).reshape(-1, 1) for l in labels])
+        bboxes      = torch.cat([torch.as_tensor(l['bboxes'],dtype=torch.float32) for l in labels])
+        im_files    = [l['im_file'] for l in labels]
+
+        return {
+            'im_file'   : im_files,
+            'img'       : imgs,
+            'cls'       : cls,
+            'bboxes'    : bboxes,
+            'batch_idx' : batch_idx,
+            'ori_shape': [(1920, 1080)] * len(imgs),
+            'ratio_pad': [((640/1920, 640/1080), (0, 0))] * len(imgs)
+        }    
     
 def getTrainTestValSplit(rootDir="/mnt/data/arts", difficulty="easy"):
     with open(os.path.join(rootDir,difficulty,r'ImageSets/Main/train.txt'),'r') as f:

@@ -12,13 +12,16 @@ if __name__ == '__main__':
     model = 'yolov8n.pt'
 
     # number of epochs 
-    epochs = 10
+    epochs = 50
     
+    # batch size
     # Define the parameters for training/evaluating the model
     params = {
         'model'     : model,
         'epochs'    : epochs,
-        'device'    : 0 if torch.cuda.is_available() else 'cpu'
+        'device'    : 0 if torch.cuda.is_available() else 'cpu',
+        'batch'     : 16,
+        'workers'   : 0,
     }
     
     trainer = CustomYoloTrainer(overrides=params)
